@@ -27,14 +27,14 @@ class BallTracker:
             with open(stub_path, "rb") as f:
                 ball_detections = pickle.load(f)
 
-        if stub_path is not None:                                   # If the stub path is provided, then we will store the player detections in the stub path
-            with open(stub_path, "wb") as f:
-                pickle.dump(ball_detections, f) 
-        
         for frame in frames:
             ball_dict = self.detect_frame(frame)
             ball_detections.append(ball_dict)
 
+        if stub_path is not None:                                   # If the stub path is provided, then we will store the player detections in the stub path
+            with open(stub_path, "wb") as f:
+                pickle.dump(ball_detections, f) 
+                
         return ball_detections
             
     def detect_frame(self, frames):
