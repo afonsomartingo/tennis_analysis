@@ -28,3 +28,6 @@ Here is a screenshot from one of the output videos:
 * pandas
 * numpy 
 * opencv
+
+## Credits
+This project draws inspiration from the original [Tennis Analysis Project](https://github.com/abdullahtarek/tennis_analysis/tree/main), used for educational purposes only.
