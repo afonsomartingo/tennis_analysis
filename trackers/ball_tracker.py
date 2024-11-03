@@ -20,6 +20,42 @@ class BallTracker:
 
         return ball_positions
 
+    def get_ball_shot_frames(self, ball_positions):
+
+        ball_positions = [x.get(1,[]) for x in ball_positions]
+        # convert the list into pandas dataframe
+        df_ball_positions = pd.DataFrame(ball_positions,columns=['x1','y1','x2','y2'])
+        
+        df_ball_positions['ball_hit'] = 0
+        df_ball_positions['mid_y'] = (df_ball_positions['y1'] + df_ball_positions['y2'])/2
+        df_ball_positions['mid_y_rolling_mean'] = df_ball_positions['mid_y'].rolling(window=5, min_periods=1, center=False).mean()
+        df_ball_positions['delta_y'] = df_ball_positions['mid_y_rolling_mean'].diff() # calculate the difference between the current and previous value
+
+        minimum_change_for_hit = 25
+        for i in range(1,len(df_ball_positions) - int(minimum_change_for_hit*1.2)):
+            negative_position_change = df_ball_positions['delta_y'].iloc[i] > 0 and df_ball_positions['delta_y'].iloc[i+1] < 0
+            positive_position_change = df_ball_positions['delta_y'].iloc[i] < 0 and df_ball_positions['delta_y'].iloc[i+1] > 0
+
+            if negative_position_change or positive_position_change:
+                change_count = 0
+                # check the next few frames to see if the ball is hit or not  
+                # iloc is used to access the index of the dataframe
+                for change_frame in range(i+1, i+int(minimum_change_for_hit*1.2)+1):
+                    negative_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] > 0 and df_ball_positions['delta_y'].iloc[i+1] < 0          
+                    positive_position_change_following_frame = df_ball_positions['delta_y'].iloc[i] < 0 and df_ball_positions['delta_y'].iloc[i+1] > 0
+
+                    if negative_position_change and negative_position_change_following_frame:
+                        change_count += 1
+                    elif positive_position_change and positive_position_change_following_frame:
+                        change_count += 1
+                # if the change count is greater than the minimum change for hit, then the ball is hit
+                if change_count>minimum_change_for_hit-1:
+                    df_ball_positions['ball_hit'].iloc[i] = 1
+
+        frame_nums_with_ball_hits = df_ball_positions[df_ball_positions['ball_hit']==1].index.tolist()
+
+        return frame_nums_with_ball_hits
+    
     def detect_frames(self, frames, read_from_stub=False, stub_path=None):
         ball_detections = []
 
@@ -34,7 +70,7 @@ class BallTracker:
         if stub_path is not None:                                   # If the stub path is provided, then we will store the player detections in the stub path
             with open(stub_path, "wb") as f:
                 pickle.dump(ball_detections, f) 
-                
+
         return ball_detections
             
     def detect_frame(self, frames):
